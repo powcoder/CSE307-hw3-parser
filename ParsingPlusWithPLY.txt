@@ -1,0 +1,182 @@
+https://powcoder.com
+代写代考加微信 powcoder
+Assignment Project Exam Help
+Add WeChat powcoder
+Welcome to Lecture 07
+
+Parsing and More with PLY
+
+Topics for today:
+  1. Review of token definition and lexer initialization in PLY
+  2. Writing productions in PLY
+  3. Initializing the parser in PLY
+  4. Adding action rules to productions (adding semantics to the grammar)
+  5. Using action rules for evaluation
+  6. Abstract Syntax Trees (AST)
+  7. Creating a parser that constructs an AST
+  8. Using the AST to do evaluation
+  9. Using the AST for semantic analysis.
+  
+Read the PLY documentation:
+https://www.dabeaz.com/ply/
+https://www.dabeaz.com/ply/ply.html
+  
+  
+1. Review of token definitions in PLY
+
+  A. Create a tuple called "tokens".
+     Each element of the tuple is a string that names a token of your language.
+     By convention, we use all-caps for token names
+     
+  B. Single-line token specification
+     Use a raw string to express the regular expression
+     "t_<token_name> = r'<regular_expression>'
+     
+  C. Function token specification
+     "def t_<token_name>(t):"
+     First line of function body is a raw string containing a regular expression
+       pattern
+     The rest of the body specifies the action that should be taken when the
+       lexer recognizes the token in the character stream using the regular
+       expression definition.
+     This is used in cases when you need the lexer to perform specialized
+       behavior for a token.
+     In particular, when reading literals of types other than string, the 
+       non-string value must be associated with the token when it is passed to
+       the parser. This requires converting the string read by the lexer from
+       the character stream into a value of the appropriate type.
+       
+    D. Ignoring characters in the input
+       "t_ignore = ''
+       Lexer will ignore characters specified in the string.
+       Mainly used to cause lexer to ignore any whitespace padding between
+       tokens.
+       
+    E. Counting newlines
+       "def t_newline(t):"
+           r'\n+'
+       Code here recognizes sequences of newlines (blank lines in the input)
+         and counts them so that the lexer can accurately track the line
+         numbers of tokens for useful error reporting
+         
+    F. Scanning Errors
+       "def t_error(t):"
+       Function body defines special behavior when a lexing error occurs.
+       
+    G. Initializing lexer
+       "import yac.lex as lex"
+       "lexer = lex.lex()"
+       The above code will create the lexer using your token definitions.
+       To run the lexer against some input:
+       "inp = input()"
+       "lexer.input(inp)"
+       "lexer.token()" - returns the next token; run this in a loop
+       
+2. Writing Productions in PLY
+
+    A. Every grammar rule is a Python function
+       "def p_<production_name>(p):"
+    
+       You can name the function whatever you want, so long as it begins with
+         "p_", but you should choose a name that matches the production.
+       Look at the examples to get the idea.
+       
+    B. The actual CFG rule is given as the docstring for the function.
+       "'<non-terminal> : <Sequence of terminal and non-terminal symbols>'"
+       
+       Example: 'expression : expression TIMES expression'
+       
+       This is the production for multiplication expressions. The RHS sequence
+         of "expression" "TIMES" and "expression" reduces to an "expression".
+         
+       The LHS of every production must be a non-terminal.
+       
+       Terminal symbols are the token names defined for the lexer.
+       
+       The non-terminal on the LHS of the first production is the grammar's
+         start symbol.
+         
+    C. There is a special rule for syntax errors
+       "def p_error(p):"
+       
+       The body of the function defines the behavior that occurs when a 
+         parsing error occurs.
+         
+3. Initializing the parser
+
+    A. Create the parser
+       "import ply.yacc as yacc"
+       "parser = yacc.yacc()"
+       
+    B. Call the parse method
+       You can then read an input string and then pass it to the parser's
+         parse method.
+       "parser.parse(inp)"
+       
+       You do have to initialize the lexer first, but
+       you do not need pass the input to the lexer or call its token method.
+       The parser will invoke the lexer on its own.
+       
+       If you want to see the parser in action. Turn on the debug options
+       described in the documentation.
+       
+       
+4. Adding action rules to grammar rules
+
+    A. Accessing and passing values through the parser
+       For each production we defined a function.
+       That function has a parameter that we have named "p"
+       When the production is triggered for a reduction, the corresponding
+         function is executed.
+       The value of "p" is a sequence--a sequence of values.
+       The elements of the sequence corresponds to the elements of the
+         production, like so.
+         
+       'expression : expression TIMES expression'
+           p[0]         p[1]     p[2]    p[3]
+           
+       By accessing the elements p[1] through p[n], I access the value
+         associated with that symbol during the current parse.
+       
+       For example, if the left hand operand to the multiplication expression
+         is a literal number, then the value stored at p[1] is that literal
+         number value.
+         
+       By assigning, to p[0] we can determine the value that the LHS
+         non-terminal symbol will carry throughout the rest of the parse.
+       
+       Remember how LR parsing works, when a reduction occurs, the RHS symbols
+         are popped off the parse stack, and the LHS non-terminal is pushed on
+         in their place. It will then be used in future reduction as an element
+         of the RHS side of some production.
+         
+       The value assigned to it here by assigning to p[0] is the value that will
+         be accessed during the execution of some future production reduction
+         function.
+         
+       This is how we can start adding semantic meaning to our grammar.
+       
+       We do this by implementing behavior that will occur when the rules in
+         the grammar are triggered--when reductions occur.
+         
+5. Using action rules for evaluation
+
+    A. See the ply_demo.py file
+    
+6. Abstract Syntax Trees (ASTs)
+
+   A. Each node represents an important semantic type.
+      We can represent the semantic content of the program
+      
+      ASTs are usually simpler than parse trees because much of the information
+        about parsing is irrelevant to expressing the meaning of the source
+        program.
+        
+   B. Easiest to define the nodes of the AST as Python classes. Each class
+        represents something meaningful in the language.
+        
+7. Building ASTs with action rules
+
+8. Doing evaluation with ASTs
+
+9. Doing semantic analysis with ASTs
